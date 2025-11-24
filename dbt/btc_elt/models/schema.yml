@@ -1,0 +1,10 @@
+version: 2
+
+models:
+  - name: fct_btc_indicators
+    description: "Daily BTC indicators combining market + ohlc with trend, behavior, and volatility."
+    columns:
+      - name: date
+        tests: [not_null, unique]
+      - name: price
+        tests: [not_null]
