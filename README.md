@@ -1,11 +1,168 @@
-**End-to-End Bitcoin Analytics Pipeline**
 
-This repository presents a complete, automated data analytics pipeline designed to extract, transform, and visualize Bitcoin market data using modern data engineering and analytics tools. The project integrates Apache Airflow, Snowflake, dbt, and Preset (Apache Superset) into a unified, Dockerized workflow that delivers near real-time insights from the CoinGecko API.
+# 📊 Multi-Coin Crypto Analytics Pipeline
+ 
+**Author:** Rajesh Paruchuri
+**Tools:** Airflow • Snowflake • dbt • Prophet • Preset BI
 
-The pipeline is composed of two orchestrated stages. The ETL layer (Extract, Transform, Load) uses Airflow to fetch raw Bitcoin data from CoinGecko’s /market_chart and /ohlc endpoints and loads it into the RAW schema in Snowflake. Once the data ingestion completes, Airflow automatically triggers the ELT layer (Extract, Load, Transform), where dbt performs analytical transformations, computes derived metrics, and manages data quality checks. Analytical models calculate key indicators such as the Relative Strength Index (RSI), 7-day and 30-day moving averages, price momentum, and trading volume patterns, enabling deep exploration of Bitcoin’s market behavior.
+---
 
-The transformed data resides in the ANALYTICS schema and is visualized through Preset dashboards, providing interactive charts that reveal trends in Bitcoin’s RSI strength, daily trading activity, and moving-average crossovers. These visual insights help users understand market volatility and identify bullish or bearish signals effectively.
+## 🎯 Objective
 
-The system emphasizes automation, reproducibility, and modularity—all managed under a Docker environment to ensure consistency across deployments. Airflow Connections and Variables enable parameterized, secure configurations, while dbt snapshots maintain historical versioning for time-based analytics.
+Build an end-to-end automated analytics pipeline that processes, transforms, forecasts, and visualizes cryptocurrency market data for multiple assets.  
+Supported coins include: **Bitcoin, Ethereum, Binance Coin, Solana, and Cardano**.
 
-This repository demonstrates an end-to-end data engineering and analytics solution that connects raw cryptocurrency APIs to actionable business intelligence for Bitcoin trend analysis.
+The system integrates:
+
+- Daily & Hourly ETL using **Airflow**
+- Multi-coin analytics modeling using **dbt**
+- Machine-learning forecasting using **Prophet**
+- Alert generation (RSI, MA crossovers, volatility)
+- Dashboards in **Preset BI** for real-time insights
+
+---
+
+## 🏗️ System Architecture
+
+### **1️⃣ Airflow – ETL Layer**
+- Extracts daily OHLC + market data from CoinGecko.
+- Extracts hourly intraday prices for real-time monitoring.
+- Loads all data into Snowflake **RAW schema**:  
+  - `RAW.COIN_GECKO_MARKET_DAILY`  
+  - `RAW.COIN_GECKO_OHLC`  
+  - `RAW.COIN_GECKO_MARKET_HOURLY`
+
+### **2️⃣ Snowflake – Data Warehouse**
+- RAW schema stores original ingested data.
+- ANALYTICS schema contains dbt-transformed technical indicators, forecasts, and alerts.
+- SNAPSHOT schema tracks historical SCD data for market and OHLC tables.
+
+### **3️⃣ dbt – ELT Layer**
+Staging Models:
+- `stg_btc_market.sql`
+- `stg_btc_ohlc.sql`
+
+Fact Model:
+- `fct_btc_indicators.sql` computes:  
+  - MA7, MA30  
+  - RSI(14)  
+  - Volatility  
+  - Price momentum (7-day)  
+  - Price return (7-day)
+
+Snapshots:
+- `snap_btc_market.sql`  
+- `snap_btc_ohlc.sql`
+
+### **4️⃣ Machine Learning – Prophet Forecasting**
+- Generates 14-day forward price predictions.
+- Includes upper & lower confidence bounds.
+- Outputs saved to:
+  - `ANALYTICS.CRYPTO_FORECAST_FINAL`
+
+### **5️⃣ Alerts Engine**
+Produces alerts based on:
+- RSI thresholds
+- Moving average crossovers
+- Volatility spikes
+
+Stored in:
+- `ANALYTICS.CRYPTO_ALERTS`
+
+### **6️⃣ Visualization – Preset BI**
+Dashboard features:
+- Price comparisons  
+- MA trend analysis  
+- RSI trend  
+- OHLC behaviors  
+- Forecast overlays  
+- Alerts table  
+- Intraday hourly monitoring  
+
+---
+
+## 📂 Project Structure
+
+```
+crypto-pipeline/
+├── airflow/
+│   └── dags/
+│       ├── etl_coin_gecko_data_exploration.py
+│       ├── coin_gecko_market_hourly_etl_v1.py
+│       ├── btc_elt_dbt_v1.py
+│       ├── crypto_price_forecast.py
+│       └── crypto_alerts_v1.py
+├── dbt/
+│   └── crypto_analytics/
+│       ├── models/
+│       ├── snapshots/
+│       ├── schema.yml
+│       └── dbt_project.yml
+├── Dockerfile
+├── docker-compose.yml
+└── README.md
+```
+
+---
+
+## ▶️ How to Run
+
+### **1. Start Airflow + Snowflake Integration**
+```bash
+docker-compose up -d
+```
+
+### **2. Access Airflow**
+```
+http://localhost:8081
+```
+Login:
+- username: airflow  
+- password: airflow
+
+### **3. Configure Airflow Variables**
+```
+coin_list = bitcoin,ethereum,binancecoin,solana,cardano
+forecast_days = 14
+```
+
+### **4. Set Up Snowflake Connection**
+- Connection ID: `snowflake_conn`
+- Database: `USER_DB_PEACOCK`
+- Warehouse: `PEACOCK_QUERY_WH`
+
+### **5. Trigger Pipelines**
+1. Daily ETL  
+2. Hourly ETL  
+3. dbt ELT  
+4. Forecast DAG  
+5. Alerts DAG  
+
+### **6. Validate Output**
+```sql
+SELECT * FROM ANALYTICS.FCT_BTC_INDICATORS LIMIT 50;
+SELECT * FROM ANALYTICS.CRYPTO_FORECAST_FINAL LIMIT 50;
+SELECT * FROM ANALYTICS.CRYPTO_ALERTS LIMIT 50;
+```
+
+### **7. Build Visualizations in Preset**
+Connect to Snowflake → Create datasets → Build charts → Assemble dashboard.
+
+---
+
+## 📊 Key Features
+
+- Automated multi-DAG Airflow workflow  
+- dbt transformations, testing, snapshots  
+- Multi-coin Prophet forecasting  
+- Intelligent alert generation  
+- Interactive, real-time dashboards  
+
+---
+
+## 📝 Conclusion
+
+This project demonstrates a modern, scalable crypto analytics platform capable of processing real-time data, generating technical insights, producing ML-driven forecasts, and triggering actionable alerts. Through the integration of Airflow, Snowflake, dbt, Prophet, and Preset BI, the pipeline delivers a complete end-to-end analytics solution for multi-coin market intelligence.
+
+---
+
+
